@@ -1,6 +1,4 @@
 #include "q6.h"
-#include <assert.h>
-#include <bits/pthreadtypes.h>
 #include <math.h>
 #include <pthread.h>
 
@@ -94,8 +92,7 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
   pthread_t tArr[OMP_NUM_THREADS];
   function_args omp_args = {start,    step,       final,
                                              schedule, chunk_size, (void *)f};
-  tuple pkt;
-  pkt.fun = &omp_args;
+  tuple pkt[OMP_NUM_THREADS];
   pos = start;
   pthread_mutex_init(&omp_mut, NULL);
 
@@ -106,11 +103,14 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
 
   case DYNAMIC:
     for (int i = 0; i < OMP_NUM_THREADS; i++) {
-      pkt.tid = i;
+      pkt[i].tid = i;
+      pkt[i].fun = &omp_args;
       pthread_create(&tArr[i], NULL, omp_dynamic,
                      (void *)&pkt);
-      pthread_join(tArr[i], NULL);
     }
+    for (int i = 0; i < OMP_NUM_THREADS; i++)
+      pthread_join(tArr[i], NULL);
+
     break;
 
     /* case GUIDELINE: */
