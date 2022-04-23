@@ -102,11 +102,12 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
     /*   break; */
 
   case DYNAMIC:
+    for (int i =0; i< OMP_NUM_THREADS; i++){
+      pkt[i].tid = i;pkt[i].fun = &omp_args;
+    }
     for (int i = 0; i < OMP_NUM_THREADS; i++) {
-      pkt[i].tid = i;
-      pkt[i].fun = &omp_args;
       pthread_create(&tArr[i], NULL, omp_dynamic,
-                     (void *)&pkt);
+                     (void *)&pkt[i]);
     }
     for (int i = 0; i < OMP_NUM_THREADS; i++)
       pthread_join(tArr[i], NULL);
