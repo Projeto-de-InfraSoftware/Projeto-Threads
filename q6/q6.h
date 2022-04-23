@@ -1,4 +1,3 @@
-#include <bits/types.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,11 +11,6 @@
 
 enum scheduleOpt { STATIC, DYNAMIC, GUIDELINE };
 
-typedef struct threadArr {
-  pthread_t thread;
-  u_int8_t tID;
-} threadArr;
-
 typedef struct function_args {
   __uint64_t start;
   __uint64_t step;
@@ -24,8 +18,12 @@ typedef struct function_args {
   __uint8_t schedType;
   __uint32_t chunkSize;
   void (*func_pack)(int);
-  threadArr *tArr;
 } function_args;
+
+typedef struct tuple {
+  function_args *fun;
+  int tid;
+} tuple;
 
 
 void *omp_execution(void *args);

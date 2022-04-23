@@ -1,6 +1,6 @@
 #include "q6.h"
 #include <assert.h>
-#include <bits/types.h>
+#include <bits/pthreadtypes.h>
 #include <math.h>
 #include <pthread.h>
 
@@ -33,7 +33,7 @@ __uint64_t pos;
 /* } */
 
 void *omp_dynamic(void *args) {
-  function_args u_args = *(function_args *)args; // unpacked_args
+  function_args u_args = *(function_args *) (((tuple*)args)->fun); // unpacked_args
   while (pos < u_args.end) {
     // ENTERING MUTUAL EXCLUSION REGION
     pthread_mutex_lock(&omp_mut);
@@ -43,40 +43,39 @@ void *omp_dynamic(void *args) {
     else
       pos += (u_args.chunkSize + u_args.step);
     printf("Thread %d pede iterações: Recebe iterações %d-%d\n",
-           &u_args.tArr->tID, u_args.start, (u_args.start + u_args.chunkSize));
-    pthread_create(&u_args.tArr->thread, NULL, omp_execution, (void *)&u_args);
+           ((tuple*)args)->tid, u_args.start, (u_args.start + u_args.chunkSize));
+    omp_execution((void*)&u_args);
     // EXITING MUTUAL EXCLUSION REGION
   }
-  pthread_join(u_args.tArr->thread, NULL);
 }
 
-void *omp_guideline(void *args) {
-  __uint64_t pos = 0;
-  pthread_mutex_init(&omp_mut, NULL);
-  threadArr tArr[OMP_NUM_THREADS]; // TODO refactor as unpack macro
-  function_args u_args = *(function_args *)args; // unpacked_args
-  u_int8_t defaultChunkSize = u_args.chunkSize;
-  while (pos < u_args.end) {
-    // ENTERING MUTUAL EXCLUSION REGION
-    pthread_mutex_lock(&omp_mut);
-    u_args.start = pos;
-    int newChunkSize = ceil((u_args.end - pos) / ((float)(OMP_NUM_THREADS)));
-    u_args.chunkSize =
-        (newChunkSize > defaultChunkSize) ? defaultChunkSize : newChunkSize;
-    if ((pos + u_args.chunkSize + u_args.step) > u_args.end)
-      pos += (pos + u_args.chunkSize + u_args.step) % u_args.end;
-    else
-      pos += (u_args.chunkSize + u_args.step);
-    pos = u_args.chunkSize;
-    printf("Thread %d pede iterações: Recebe iterações %d-%d (teto de %d/%d)",
-           tArr->tID, u_args.start, u_args.chunkSize, (u_args.end - pos),
-           OMP_NUM_THREADS);
+/* void *omp_guideline(void *args) { */
+/*   __uint64_t pos = 0; */
+/*   pthread_mutex_init(&omp_mut, NULL); */
+/*   threadArr tArr[OMP_NUM_THREADS]; // TODO refactor as unpack macro */
+/*   function_args u_args = *(function_args *)args; // unpacked_args */
+/*   u_int8_t defaultChunkSize = u_args.chunkSize; */
+/*   while (pos < u_args.end) { */
+/*     // ENTERING MUTUAL EXCLUSION REGION */
+/*     pthread_mutex_lock(&omp_mut); */
+/*     u_args.start = pos; */
+/*     int newChunkSize = ceil((u_args.end - pos) / ((float)(OMP_NUM_THREADS))); */
+/*     u_args.chunkSize = */
+/*         (newChunkSize > defaultChunkSize) ? defaultChunkSize : newChunkSize; */
+/*     if ((pos + u_args.chunkSize + u_args.step) > u_args.end) */
+/*       pos += (pos + u_args.chunkSize + u_args.step) % u_args.end; */
+/*     else */
+/*       pos += (u_args.chunkSize + u_args.step); */
+/*     pos = u_args.chunkSize; */
+/*     printf("Thread %d pede iterações: Recebe iterações %d-%d (teto de %d/%d)", */
+/*            tArr->tID, u_args.start, u_args.chunkSize, (u_args.end - pos), */
+/*            OMP_NUM_THREADS); */
 
-    pthread_create(&(tArr->thread), NULL, omp_execution, (void *)&u_args);
-    // EXITING MUTUAL EXCLUSION REGION
-  }
-  pthread_join(tArr->thread, NULL);
-}
+/*     pthread_create(&(tArr->thread), NULL, omp_execution, (void *)&u_args); */
+/*     // EXITING MUTUAL EXCLUSION REGION */
+/*   } */
+/*   pthread_join(tArr->thread, NULL); */
+/* } */
 
 void *omp_execution(void *args) {
   function_args u_args = *(function_args *)args;
@@ -92,11 +91,13 @@ void *omp_execution(void *args) {
 void omp_for(int start, int step, int final, int schedule, int chunk_size,
              void (*f)(int)) {
 
-  threadArr tArr[OMP_NUM_THREADS];
-  function_args omp_args[OMP_NUM_THREADS] = {start,    step,       final,
+  pthread_t tArr[OMP_NUM_THREADS];
+  function_args omp_args = {start,    step,       final,
                                              schedule, chunk_size, (void *)f};
-  pthread_mutex_init(&omp_mut, NULL);
+  tuple pkt;
+  pkt.fun = &omp_args;
   pos = start;
+  pthread_mutex_init(&omp_mut, NULL);
 
   switch (schedule) {
     /* case STATIC: */
@@ -105,17 +106,18 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
 
   case DYNAMIC:
     for (int i = 0; i < OMP_NUM_THREADS; i++) {
-      omp_args[i].tArr = &tArr[i];
-      pthread_create(&(tArr[i].thread), NULL, omp_dynamic,
-                     (void *)&omp_args[i]);
+      pkt.tid = i;
+      pthread_create(&tArr[i], NULL, omp_dynamic,
+                     (void *)&pkt);
+      pthread_join(tArr[i], NULL);
     }
     break;
 
     /* case GUIDELINE: */
     /*   for(int i = 0; i < OMP_NUM_THREADS;i++){ */
     /*     omp_args.tArr = &tArr[i]; */
-    /*     pthread_create(&tArr[i].thread, NULL, omp_guideline, (void
-     * *)&omp_args); */
+    /*     pthread_create(&tArr[i].thread, NULL, omp_guideline, (void */
+    /* *)&omp_args); */
     /*   } */
     /*   break; */
     /* } */
