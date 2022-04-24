@@ -31,68 +31,63 @@ __uint64_t pos;
 /* } */
 
 void *omp_dynamic(void *args) {
-  function_args u_args = *(function_args *) (((tuple*)args)->fun); // unpacked_args
-  while (pos < u_args.end) {
+  function_args u_args = *(function_args *)args;
+  while (pos < (u_args.end - u_args.step)) {
     // ENTERING MUTUAL EXCLUSION REGION
     pthread_mutex_lock(&omp_mut);
     u_args.start = pos;
-    if ((pos + u_args.chunkSize + u_args.step) > u_args.end)
-      pos += (pos + u_args.chunkSize + u_args.step) % u_args.end;
-    else
-      pos += (u_args.chunkSize + u_args.step);
-    printf("Thread %d pede iterações: Recebe iterações %d-%d\n",
-           ((tuple*)args)->tid, u_args.start, (u_args.start + u_args.chunkSize));
-    omp_execution((void*)&u_args);
-    // EXITING MUTUAL EXCLUSION REGION
+    pos = (u_args.chunkSize + u_args.step + pos) > u_args.end
+              ? (u_args.end - u_args.step)
+              : (u_args.chunkSize + u_args.step + pos);
+    printf("Thread %d pede iterações: Recebe iterações %d-%d\n", pthread_self(),
+           u_args.start, (u_args.start + u_args.chunkSize));
+    omp_execution(u_args.start, (u_args.chunkSize + u_args.start), u_args.step,
+                  u_args.schedType, u_args.func_pack);
   }
+  printf("Thread %d pede iterações: é fechada\n", pthread_self());
 }
 
 /* void *omp_guideline(void *args) { */
-/*   __uint64_t pos = 0; */
-/*   pthread_mutex_init(&omp_mut, NULL); */
-/*   threadArr tArr[OMP_NUM_THREADS]; // TODO refactor as unpack macro */
 /*   function_args u_args = *(function_args *)args; // unpacked_args */
 /*   u_int8_t defaultChunkSize = u_args.chunkSize; */
 /*   while (pos < u_args.end) { */
 /*     // ENTERING MUTUAL EXCLUSION REGION */
 /*     pthread_mutex_lock(&omp_mut); */
 /*     u_args.start = pos; */
-/*     int newChunkSize = ceil((u_args.end - pos) / ((float)(OMP_NUM_THREADS))); */
+/*     int newChunkSize = ceil((u_args.end - pos) / ((float)(OMP_NUM_THREADS)));
+ */
 /*     u_args.chunkSize = */
-/*         (newChunkSize > defaultChunkSize) ? defaultChunkSize : newChunkSize; */
+/*         (newChunkSize > defaultChunkSize) ? defaultChunkSize : newChunkSize;
+ */
 /*     if ((pos + u_args.chunkSize + u_args.step) > u_args.end) */
-/*       pos += (pos + u_args.chunkSize + u_args.step) % u_args.end; */
+/*       pos += u_args.end - u_args.step; */
 /*     else */
 /*       pos += (u_args.chunkSize + u_args.step); */
 /*     pos = u_args.chunkSize; */
-/*     printf("Thread %d pede iterações: Recebe iterações %d-%d (teto de %d/%d)", */
-/*            tArr->tID, u_args.start, u_args.chunkSize, (u_args.end - pos), */
+/*     printf("Thread %d pede iterações: Recebe iterações %d-%d (teto de
+ * %d/%d)", */
+/*            pthread_self(), u_args.start, u_args.chunkSize, (u_args.end -
+ * pos), */
 /*            OMP_NUM_THREADS); */
-
-/*     pthread_create(&(tArr->thread), NULL, omp_execution, (void *)&u_args); */
-/*     // EXITING MUTUAL EXCLUSION REGION */
+/*       omp_execution((void *)&u_args); */
 /*   } */
-/*   pthread_join(tArr->thread, NULL); */
 /* } */
 
-void *omp_execution(void *args) {
-  function_args u_args = *(function_args *)args;
-  if (u_args.schedType != STATIC)
+void *omp_execution(int start, int comp, int step, int sched, void (*f)(int)) {
+  if (sched != STATIC)
     pthread_mutex_unlock(&omp_mut);
 
-  for (int k = u_args.start; k < (u_args.chunkSize + u_args.start);
-       k += u_args.step) {
-    u_args.func_pack(k);
+  for (int k = start; k < comp; k += step) {
+    f(k);
   }
 }
 
 void omp_for(int start, int step, int final, int schedule, int chunk_size,
              void (*f)(int)) {
 
-  pthread_t tArr[OMP_NUM_THREADS];
+  pthread_t *tArr[OMP_NUM_THREADS];
   function_args omp_args = {start,    step,       final,
-                                             schedule, chunk_size, (void *)f};
-  tuple pkt[OMP_NUM_THREADS];
+                            schedule, chunk_size, (void *)f};
   pos = start;
   pthread_mutex_init(&omp_mut, NULL);
 
@@ -102,39 +97,36 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
     /*   break; */
 
   case DYNAMIC:
-    for (int i =0; i< OMP_NUM_THREADS; i++){
-      pkt[i].tid = i;pkt[i].fun = &omp_args;
-    }
     for (int i = 0; i < OMP_NUM_THREADS; i++) {
-      pthread_create(&tArr[i], NULL, omp_dynamic,
-                     (void *)&pkt[i]);
+      tArr[i] = (pthread_t *)malloc(sizeof(pthread_t));
+      pthread_create(tArr[i], NULL, omp_dynamic, (void *)&omp_args);
     }
     for (int i = 0; i < OMP_NUM_THREADS; i++)
-      pthread_join(tArr[i], NULL);
+      pthread_join(*tArr[i], NULL);
 
     break;
 
     /* case GUIDELINE: */
+    /* for (int i = 0; i < OMP_NUM_THREADS; i++) { */
+    /*   tArr[i] = (pthread_t *)malloc(sizeof(pthread_t)); */
+    /*   pthread_create(tArr[i], NULL, omp_dynamic, (void *)&omp_args); */
     /*   for(int i = 0; i < OMP_NUM_THREADS;i++){ */
-    /*     omp_args.tArr = &tArr[i]; */
-    /*     pthread_create(&tArr[i].thread, NULL, omp_guideline, (void */
     /* *)&omp_args); */
     /*   } */
-    /*   break; */
-    /* } */
   }
 }
 
 void OK(int i) {
-  printf("This is the %d OK!\n", i);
+
+  printf("%d\n", pthread_self());
   counter++;
 }
 
 int main(void) {
-
-  omp_for(0, 1, 50, DYNAMIC, 1, OK);
   /* omp_for(0, 1, 50, GUIDELINE, 1, OK); */
   /* counter=0; */
+  omp_for(0, 2, 80, DYNAMIC, 1, OK);
+  printf("%d", counter);
   /* omp_for(0, 1, 50, STATIC, 1, OK); */
   /* counter=0; */
 }
