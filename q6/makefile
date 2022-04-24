@@ -1,2 +1,2 @@
-all: q6.c
-	gcc -g -lm -o q6 q6.c
+all: omp_for.c
+	gcc -g -lm -o q6 omp_for.c
