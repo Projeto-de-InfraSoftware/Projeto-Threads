@@ -34,17 +34,20 @@ void *omp_dynamic(void *args) {
   function_args u_args = *(function_args *)args;
   while (pos < (u_args.end - u_args.step)) {
     // ENTERING MUTUAL EXCLUSION REGION
-    pthread_mutex_lock(&omp_mut);
-    u_args.start = pos;
-    pos = (u_args.chunkSize + u_args.step + pos) > u_args.end
-              ? (u_args.end - u_args.step)
-              : (u_args.chunkSize + u_args.step + pos);
-    printf("Thread %d pede iterações: Recebe iterações %d-%d\n", pthread_self(),
-           u_args.start, (u_args.start + u_args.chunkSize));
-    omp_execution(u_args.start, (u_args.chunkSize + u_args.start), u_args.step,
-                  u_args.schedType, u_args.func_pack);
+      pthread_mutex_lock(&omp_mut);
+      u_args.start = pos;
+      if(pos > (u_args.end - u_args.step))
+        break;
+      pos = ((u_args.chunkSize-1) + u_args.step + pos) > u_args.end
+                ? (u_args.end - u_args.step)
+                : ((u_args.chunkSize -1) + u_args.step + pos);
+      printf("Thread %d pede iterações: Recebe iterações %d-%d\n",
+             pthread_self(), u_args.start,
+             (u_args.start + (u_args.chunkSize-1)));
+      omp_execution(u_args.start, (u_args.chunkSize + u_args.start),
+                    u_args.step, u_args.schedType, u_args.func_pack);
   }
-  printf("Thread %d pede iterações: é fechada\n", pthread_self());
+    printf("Thread %d pede iterações: é fechada\n", pthread_self());
 }
 
 /* void *omp_guideline(void *args) { */
