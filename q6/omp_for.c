@@ -14,16 +14,19 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
   switch (schedule) {
   case STATIC:
     omp_args.workSchedule = generate_static_sched((void *)&omp_args);
+    omp_args.pos = &omp_args.workSchedule[0];
     handler_static(&omp_args, &tArr, &tupleArr);
     break;
 
   case DYNAMIC:
     omp_args.workSchedule = generate_dynamic_sched((void *)&omp_args);
+    omp_args.pos = &omp_args.workSchedule[0];
     handler_dynamic(&omp_args, &tArr, &tupleArr);
     break;
 
   case GUIDELINE:
     omp_args.workSchedule = generate_guideline_sched((void *)&omp_args);
+    omp_args.pos = &omp_args.workSchedule[0];
     handler_guideline(&omp_args, &tArr, &tupleArr);
     break;
   }

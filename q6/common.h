@@ -21,6 +21,7 @@ typedef struct function_args {
   int schedType;
   int chunkSize;
   void (*func_pack)(int);
+  int *pos;
   int* workSchedule;
 } function_args;
 
@@ -33,8 +34,7 @@ typedef struct tuple {
 
 pthread_mutex_t omp_mut;
 int counter = 0;
-int pos=0;
-int len=0;
+int len = 0;
 
 void omp_execution(int, int, int, int,void(*)(int));
 
