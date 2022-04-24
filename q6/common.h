@@ -1,3 +1,6 @@
+#ifndef COMMON_H_
+#define COMMON_H_
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,11 +15,11 @@ enum scheduleOpt {
     };
 
 typedef struct function_args {
-  __uint64_t start;
-  __uint64_t step;
-  __uint64_t end;
-  __uint8_t schedType;
-  __uint32_t chunkSize;
+  int start;
+  int step;
+  int end;
+  int schedType;
+  int chunkSize;
   void (*func_pack)(int);
   int* workSchedule;
 } function_args;
@@ -30,8 +33,8 @@ typedef struct tuple {
 
 pthread_mutex_t omp_mut;
 int counter = 0;
-__uint64_t pos;
-int len;
+int pos=0;
+int len=0;
 
 void omp_execution(int, int, int, int,void(*)(int));
 
@@ -45,7 +48,7 @@ int* generate_static_sched(void*);
 
 int* generate_dynamic_sched(void*);
 
-int* generate_guideline_sched(void);
+int* generate_guideline_sched(void*);
 
 void* handler_static(function_args*, pthread_t**, tuple**);
 
@@ -65,3 +68,4 @@ inline void omp_execution(int start, int comp, int step, int sched, void (*f)(in
     f(k);
   }
 }
+#endif // COMMON_H_
