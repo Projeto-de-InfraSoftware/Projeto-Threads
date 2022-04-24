@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <sys/sysinfo.h>
 
-#define OMP_NUM_THREADS 6
+#define OMP_NUM_THREADS 4
 #define NEXT_STEP(chunk_size, inicio, j, passo, c, i)                          \
   (((chunk_size * OMP_NUM_THREADS * i) + inicio) + (chunk_size * j) +          \
    (passo + c))
@@ -23,7 +23,7 @@ typedef struct function_args {
   void (*func_pack)(int);
 } function_args;
 
-void *omp_execution(int, int, int, int,void(*)(int));
+void omp_execution(int, int, int, int,void(*)(int));
 
 void *omp_static(void *);
 
