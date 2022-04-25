@@ -21,7 +21,7 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
   s_pointer = (t_pointer *)malloc(sizeof(t_pointer) * OMP_NUM_THREADS);
   if (!s_pointer)
     exit(-1);
-  switch (schedule) {
+  switch (schedule) { //DISPATCHERS for more selective work
   case STATIC:
     global_work = (int *)malloc(sizeof(int) * len);
     global_work = generate_static_sched((void *)&omp_args);
@@ -72,19 +72,19 @@ void OK(int i) {
   ++counter;
 }
 
-int main(void) {
-  /* omp_for(0, 2, 50, GUIDELINE, 1, OK); */
-  /* printf("%d\n",counter); */
-  /* counter=0; */
-  /* omp_for(0, 3, 50, GUIDELINE, 3, OK); */
-  /* printf("%d\n",counter); */
-  /* counter = 0; */
-  /* omp_for(0, 2, 50, DYNAMIC, 3, OK); */
-  /* printf("%d\n", counter); */
-  /* counter=0; */
-  /* omp_for(0,2 ,50, DYNAMIC, 3 ,OK); */
-  /* printf("%d\n", counter); */
-  /* counter=0; */
+int main(void) { //TESTS
+  omp_for(0, 2, 50, GUIDELINE, 1, OK);
+  printf("%d\n",counter);
+  counter=0;
+  omp_for(0, 3, 50, GUIDELINE, 3, OK);
+  printf("%d\n",counter);
+  counter = 0;
+  omp_for(0, 2, 50, DYNAMIC, 4, OK);
+  printf("%d\n", counter);
+  counter=0;
+  omp_for(0,2 ,50, DYNAMIC, 3 ,OK);
+  printf("%d\n", counter);
+  counter=0;
   omp_for(0, 2, 50, STATIC, 3, OK);
   printf("%d\n",counter);
   counter=0;

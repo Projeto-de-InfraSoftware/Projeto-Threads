@@ -8,7 +8,7 @@ inline void *omp_dynamic(void *args) {
   while (!(g_pointer->index > (len-1))) {
     // ENTERING_MUTUAL_EXCLUSION_REGION
       pthread_mutex_lock(&omp_mut);
-      if(g_pointer->index > (len-1)){
+      if(g_pointer->index > (len-1)){ // WHEN g_pointer has arrived in the end of global_work threads can exit
         pthread_mutex_unlock(&omp_mut);
         break;
       }
@@ -30,7 +30,7 @@ inline int *generate_dynamic_sched(void *args) {
   int lower = u_args.chunkSize;
   int steps[interval];
   int acc=0;
-  for (iter = u_args.start; iter <= interval;
+  for (iter = u_args.start; iter <= interval; // CUSTOM LOGIC TO GENERATE SCHEDULED WORK
        iter =(acc +=u_args.chunkSize*u_args.step)) {
 
     if (((lower + iter) > interval)||(acc>=interval))
