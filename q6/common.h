@@ -37,6 +37,7 @@ typedef struct t_pointer{
 
 pthread_mutex_t omp_mut;
 t_pointer *g_pointer;
+t_pointer *s_pointer;
 int counter = 0;
 int len = 0;
 int* global_work;
