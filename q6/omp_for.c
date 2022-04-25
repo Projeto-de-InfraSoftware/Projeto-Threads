@@ -2,6 +2,7 @@
 #include "omp_dynamic.h"
 #include "omp_guideline.h"
 #include "omp_static.h"
+#include <pthread.h>
 
 void omp_for(int start, int step, int final, int schedule, int chunk_size,
              void (*f)(int)) {
@@ -35,6 +36,7 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
       pthread_create(&tArr[i], NULL, omp_static, (void *)&tupleArr[i]);
     for (int i = 0; i < OMP_NUM_THREADS; i++)
       pthread_join(tArr[i], NULL);
+    pthread_mutex_destroy(&omp_mut);
     break;
   case DYNAMIC:
     global_work = (int *)malloc(sizeof(int) * len);
@@ -47,6 +49,7 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
       pthread_create(&tArr[i], NULL, omp_dynamic, (void *)&tupleArr[i]);
     for (int i = 0; i < OMP_NUM_THREADS; i++)
       pthread_join(tArr[i], NULL);
+    pthread_mutex_destroy(&omp_mut);
     break;
   case GUIDELINE:
     global_work = (int *)malloc(sizeof(int) * len);
@@ -59,6 +62,7 @@ void omp_for(int start, int step, int final, int schedule, int chunk_size,
       pthread_create(&tArr[i], NULL, omp_guideline, (void *)&tupleArr[i]);
     for (int i = 0; i < OMP_NUM_THREADS; i++)
       pthread_join(tArr[i], NULL);
+    pthread_mutex_destroy(&omp_mut);
     break;
   }
 }
@@ -69,12 +73,22 @@ void OK(int i) {
 }
 
 int main(void) {
-  /* omp_for(0, 1, 50, GUIDELINE, 2, OK); */
-  /* printf("%d",counter); */
+  /* omp_for(0, 2, 50, GUIDELINE, 1, OK); */
+  /* printf("%d\n",counter); */
+  /* counter=0; */
+  /* omp_for(0, 3, 50, GUIDELINE, 3, OK); */
+  /* printf("%d\n",counter); */
   /* counter = 0; */
-  /* omp_for(0, 1, 20, DYNAMIC, 2, OK); */
-  /* printf("%d", counter); */
-  omp_for(0, 1, 51, STATIC, 3, OK);
-  printf("%d",counter);
+  /* omp_for(0, 2, 50, DYNAMIC, 3, OK); */
+  /* printf("%d\n", counter); */
+  /* counter=0; */
+  /* omp_for(0,2 ,50, DYNAMIC, 3 ,OK); */
+  /* printf("%d\n", counter); */
+  /* counter=0; */
+  omp_for(0, 2, 50, STATIC, 3, OK);
+  printf("%d\n",counter);
+  counter=0;
+  omp_for(0, 2, 50, STATIC, 3, OK);
+  printf("%d\n", counter);
   counter = 0;
 }

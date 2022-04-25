@@ -6,9 +6,9 @@ inline void *omp_static(void *args) {
   tuple u_args = *((tuple *)args); // unpacked_args
   while (s_pointer[u_args.tid].index < 4) {
     printf("Thread %d: %d-%d\n", u_args.tid, (s_pointer[u_args.tid].acc),
-           (s_pointer[u_args.tid].acc + (*s_pointer[u_args.tid].actual))-1);
+           (s_pointer[u_args.tid].acc + ((*s_pointer[u_args.tid].actual-1)*u_args.fun->step)));
     omp_execution(s_pointer[u_args.tid].acc,
-                  (s_pointer[u_args.tid].acc + ((*s_pointer[u_args.tid].actual))-1),
+                  (s_pointer[u_args.tid].acc + (((*s_pointer[u_args.tid].actual-1)*u_args.fun->step))),
                   u_args.fun->step, u_args.fun->schedType,
                   u_args.fun->func_pack);
     s_pointer[u_args.tid].acc += *(++s_pointer[u_args.tid].actual)*OMP_NUM_THREADS;
