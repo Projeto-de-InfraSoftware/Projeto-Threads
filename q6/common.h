@@ -32,6 +32,7 @@ typedef struct t_pointer{
   int acc;
   int accTemp;
   int index;
+  int* actual;
 } t_pointer;
 
 
@@ -72,7 +73,7 @@ inline void omp_execution(int start, int comp, int step, int sched, void (*f)(in
     pthread_mutex_unlock(&omp_mut);
   }
 
-  for (int k = start; k < comp; k += step) {
+  for (int k = start; k <= comp; k += step) {
     f(k);
   }
 }
